@@ -17,7 +17,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nonnull;
 import org.reactivestreams.Publisher;
 
-public class FirestoreUtils {
+public final class FirestoreUtils {
+
+  private FirestoreUtils() {
+  }
 
   private static final int
       QUERY_BATCH_SIZE = 1000,
