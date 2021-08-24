@@ -10,7 +10,6 @@ import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -27,9 +26,9 @@ public final class GoogleCredentialsAccessTokenGenerator {
       cacheBuilder.maximumSize(cacheSize);
     }
     if (cacheDuration != null) {
-      cacheBuilder.expireAfterWrite(cacheDuration.toMillis(), TimeUnit.MILLISECONDS);
+      cacheBuilder.expireAfterWrite(cacheDuration);
     }
-    this.accessTokenCache = cacheBuilder.build(this::doGetFreshToken);
+    this.accessTokenCache = cacheBuilder.build(this::getFreshAccessToken);
   }
 
   public AccessToken getAccessToken(String... scopes) {
@@ -41,7 +40,7 @@ public final class GoogleCredentialsAccessTokenGenerator {
         new AccessTokenCacheKey(delegateEmail, ImmutableSet.copyOf(scopes)));
   }
 
-  private AccessToken doGetFreshToken(AccessTokenCacheKey cacheKey) {
+  private AccessToken getFreshAccessToken(AccessTokenCacheKey cacheKey) {
     final GoogleCredentials credentialsToUse;
     if (cacheKey.delegateEmail == null) {
       credentialsToUse = credentials;
