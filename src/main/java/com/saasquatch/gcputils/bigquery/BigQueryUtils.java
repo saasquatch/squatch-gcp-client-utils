@@ -27,11 +27,11 @@ public final class BigQueryUtils {
   }
 
   /**
-   * Check if a {@link RuntimeException} thrown by {@link BigQuery#insertAll(InsertAllRequest)} is a
-   * client side invalid error that cannot be retried.
+   * Check if a {@link Throwable} thrown by {@link BigQuery#insertAll(InsertAllRequest)} is a client
+   * side invalid error that cannot be retried.
    */
   @SuppressWarnings("RedundantIfStatement")
-  public static boolean isClientSideInvalidInsertAllException(@Nonnull RuntimeException e) {
+  public static boolean isClientSideInvalidInsertAllException(@Nonnull Throwable e) {
     if (StringUtils.containsAnyIgnoreCase(e.getMessage(), "timed out", "retrying limits", "502")) {
       // Server side intermittent
       return false;
