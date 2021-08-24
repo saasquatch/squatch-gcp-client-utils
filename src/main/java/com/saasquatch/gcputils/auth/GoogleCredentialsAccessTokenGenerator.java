@@ -1,7 +1,7 @@
 package com.saasquatch.gcputils.auth;
 
-import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.common.collect.ImmutableSet;
@@ -17,7 +17,7 @@ import javax.annotation.Nullable;
 public final class GoogleCredentialsAccessTokenGenerator {
 
   private final GoogleCredentials credentials;
-  private final Cache<Set<String>, AccessToken> accessTokenCache;
+  private final LoadingCache<AccessTokenCacheKey, AccessToken> accessTokenCache;
 
   private GoogleCredentialsAccessTokenGenerator(GoogleCredentials credentials, int cacheSize,
       Duration cacheDuration) {
@@ -29,30 +29,27 @@ public final class GoogleCredentialsAccessTokenGenerator {
     if (cacheDuration != null) {
       cacheBuilder.expireAfterWrite(cacheDuration.toMillis(), TimeUnit.MILLISECONDS);
     }
-    this.accessTokenCache = cacheBuilder.build();
+    this.accessTokenCache = cacheBuilder.build(this::doGetFreshToken);
   }
 
   public AccessToken getAccessToken(String... scopes) {
-    final Set<String> scopesSet = ImmutableSet.copyOf(scopes);
-    return accessTokenCache.get(scopesSet, ignored -> doGetFreshToken(null, scopesSet));
+    return accessTokenCache.get(new AccessTokenCacheKey(null, ImmutableSet.copyOf(scopes)));
   }
 
   public AccessToken getDelegatedAccessToken(@Nonnull String delegateEmail, String... scopes) {
-    final Set<String> scopesSet = ImmutableSet.copyOf(scopes);
-    final Set<String> cacheKey = ImmutableSet.<String>builder()
-        .add(delegateEmail).add(scopes).build();
-    return accessTokenCache.get(cacheKey, ignored -> doGetFreshToken(delegateEmail, scopesSet));
+    return accessTokenCache.get(
+        new AccessTokenCacheKey(delegateEmail, ImmutableSet.copyOf(scopes)));
   }
 
-  private AccessToken doGetFreshToken(@Nullable String delegateEmail, Set<String> scopes) {
+  private AccessToken doGetFreshToken(AccessTokenCacheKey cacheKey) {
     final GoogleCredentials credentialsToUse;
-    if (delegateEmail == null) {
+    if (cacheKey.delegateEmail == null) {
       credentialsToUse = credentials;
     } else {
-      credentialsToUse = credentials.createDelegated(delegateEmail);
+      credentialsToUse = credentials.createDelegated(cacheKey.delegateEmail);
     }
     try {
-      return credentialsToUse.createScoped(scopes).refreshAccessToken();
+      return credentialsToUse.createScoped(cacheKey.scopes).refreshAccessToken();
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }
@@ -90,6 +87,35 @@ public final class GoogleCredentialsAccessTokenGenerator {
       return new GoogleCredentialsAccessTokenGenerator(credentials, cacheSize, cacheDuration);
     }
 
+  }
+
+  private static final class AccessTokenCacheKey {
+
+    final String delegateEmail;
+    final Set<String> scopes;
+
+    AccessTokenCacheKey(@Nullable String delegateEmail, @Nonnull Set<String> scopes) {
+      this.delegateEmail = delegateEmail;
+      this.scopes = scopes;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      final AccessTokenCacheKey that = (AccessTokenCacheKey) o;
+      return Objects.equals(delegateEmail, that.delegateEmail)
+          && Objects.equals(scopes, that.scopes);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(delegateEmail, scopes);
+    }
   }
 
 }
