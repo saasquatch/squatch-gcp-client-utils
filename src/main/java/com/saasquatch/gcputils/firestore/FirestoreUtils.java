@@ -107,7 +107,7 @@ public final class FirestoreUtils {
    *
    * @param t the error thrown by a query request
    */
-  public static boolean isQueryUnableToComplete(Throwable t) {
+  public static boolean isQueryUnableToComplete(@Nonnull Throwable t) {
     final Status.Code code = Optional.ofNullable(GcpUtils.getGrpcStatus(t))
         .map(Status::getCode)
         .orElse(null);
