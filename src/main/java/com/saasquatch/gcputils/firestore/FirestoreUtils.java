@@ -9,10 +9,12 @@ import com.google.cloud.firestore.QuerySnapshot;
 import com.google.cloud.firestore.WriteBatch;
 import com.google.common.base.Utf8;
 import com.saasquatch.gcputils.GcpUtils;
+import io.grpc.Status;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Maybe;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nonnull;
 import org.reactivestreams.Publisher;
@@ -97,6 +99,19 @@ public final class FirestoreUtils {
         })
         .reduce(0L, Math::addExact)
         .toFlowable();
+  }
+
+  /**
+   * Check if an error indicates the query is unable to complete due to things like the query being
+   * too complex or needing an index.
+   *
+   * @param t the error thrown by a query request
+   */
+  public static boolean isQueryUnableToComplete(Throwable t) {
+    final Status.Code code = Optional.ofNullable(GcpUtils.getGrpcStatus(t))
+        .map(Status::getCode)
+        .orElse(null);
+    return code == Status.Code.FAILED_PRECONDITION || code == Status.Code.INVALID_ARGUMENT;
   }
 
 }
