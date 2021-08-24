@@ -83,7 +83,8 @@ public final class GoogleCredentialsAccessTokenGenerator {
     }
 
     public GoogleCredentialsAccessTokenGenerator build() {
-      return new GoogleCredentialsAccessTokenGenerator(credentials, cacheSize, cacheDuration);
+      return new GoogleCredentialsAccessTokenGenerator(Objects.requireNonNull(credentials),
+          cacheSize, cacheDuration);
     }
 
   }
