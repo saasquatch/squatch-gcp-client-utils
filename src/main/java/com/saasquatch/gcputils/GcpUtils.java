@@ -5,6 +5,9 @@ import com.google.api.core.ApiFutureCallback;
 import com.google.api.core.ApiFutures;
 import com.google.cloud.Timestamp;
 import com.google.common.util.concurrent.MoreExecutors;
+import io.grpc.Status;
+import io.grpc.StatusException;
+import io.grpc.StatusRuntimeException;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Locale;
@@ -84,6 +87,23 @@ public final class GcpUtils {
     }
     throw new IllegalArgumentException(String.format(Locale.ROOT,
         "Unable to get Date from object[%s]: %s", o.getClass(), o));
+  }
+
+  /**
+   * Get a possible gRPC {@link Status} from a {@link Throwable}
+   */
+  @Nullable
+  public static Status getGrpcStatus(@Nonnull Throwable t) {
+    Throwable curr = Objects.requireNonNull(t);
+    while (curr != null) {
+      if (curr instanceof StatusRuntimeException) {
+        return ((StatusRuntimeException) curr).getStatus();
+      } else if (curr instanceof StatusException) {
+        return ((StatusException) curr).getStatus();
+      }
+      curr = curr.getCause();
+    }
+    return null;
   }
 
 }
