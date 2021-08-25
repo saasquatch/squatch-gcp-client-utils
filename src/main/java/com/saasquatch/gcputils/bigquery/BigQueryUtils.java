@@ -47,7 +47,7 @@ public final class BigQueryUtils {
    * When one entry in the insert all request is invalid, the errors can get spammed with "stopped"
    * errors. This method filters out all the "stopped" errors.
    */
-  public static Map<Long, List<BigQueryError>> filterRelevantInsertErrors(
+  private static Map<Long, List<BigQueryError>> filterRelevantInsertErrors(
       @Nonnull Map<Long, List<BigQueryError>> insertErrors) {
     return insertErrors.entrySet().stream()
         .filter(errors -> errors.getValue().stream()
@@ -59,7 +59,7 @@ public final class BigQueryUtils {
    * Check whether the given {@link Map} of insert errors contains persistent errors that cannot be
    * retried.
    */
-  public static boolean containsPersistentErrors(
+  private static boolean containsPersistentErrors(
       @Nonnull Map<Long, List<BigQueryError>> insertErrors) {
     return insertErrors.values().stream()
         .filter(Objects::nonNull)
