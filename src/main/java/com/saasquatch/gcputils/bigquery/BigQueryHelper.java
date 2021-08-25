@@ -29,9 +29,9 @@ import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class BigQueryUtils {
+public final class BigQueryHelper {
 
-  private static final Logger logger = LoggerFactory.getLogger(BigQueryUtils.class);
+  private static final Logger logger = LoggerFactory.getLogger(BigQueryHelper.class);
 
   /**
    * The recommended batch size for streaming insert requests.
@@ -40,7 +40,14 @@ public final class BigQueryUtils {
   private static final Set<String> PERSISTENT_ERROR_REASONS =
       ImmutableSet.of("invalid", "invalidQuery", "notImplemented");
 
-  private BigQueryUtils() {
+  private final BigQuery bigQuery;
+
+  private BigQueryHelper(@Nonnull BigQuery bigQuery) {
+    this.bigQuery = bigQuery;
+  }
+
+  public static BigQueryHelper create(@Nonnull BigQuery bigQuery) {
+    return new BigQueryHelper(Objects.requireNonNull(bigQuery));
   }
 
   /**
@@ -70,8 +77,8 @@ public final class BigQueryUtils {
         .anyMatch(PERSISTENT_ERROR_REASONS::contains);
   }
 
-  public static Publisher<Void> insertAllWithRetries(@Nonnull BigQuery bigQuery,
-      @Nonnull InsertAllRequest insertAllRequest, @Nonnull InsertAllWithRetriesOptions options) {
+  public Publisher<Void> insertAllWithRetries(@Nonnull InsertAllRequest insertAllRequest,
+      @Nonnull InsertAllWithRetriesOptions options) {
     final TableId tableId = insertAllRequest.getTable();
     final BooleanSupplier action = () -> {
       final long t0 = System.nanoTime();
