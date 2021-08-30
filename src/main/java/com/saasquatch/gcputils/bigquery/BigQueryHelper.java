@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 import javax.annotation.Nonnull;
@@ -80,7 +81,7 @@ public final class BigQueryHelper {
   public Publisher<Void> insertAllWithRetries(@Nonnull InsertAllRequest insertAllRequest,
       @Nonnull InsertAllWithRetriesOptions options) {
     final TableId tableId = insertAllRequest.getTable();
-    final BooleanSupplier action = () -> {
+    final Callable<Boolean> insertAllCallable = () -> {
       final long t0 = System.nanoTime();
       final InsertAllResponse response;
       try {
@@ -126,7 +127,7 @@ public final class BigQueryHelper {
     final int retryCount = options.retryCount;
     return Flowable.range(0, retryCount)
         .subscribeOn(Schedulers.io()).observeOn(Schedulers.io())
-        .concatMap(retryIndex -> Flowable.fromCallable(action::getAsBoolean)
+        .concatMap(retryIndex -> Flowable.fromCallable(insertAllCallable)
             .concatMap(insertResult -> {
               if (insertResult) {
                 return Flowable.just(ObjectUtils.NULL);
